@@ -93,7 +93,7 @@ include(coverage)
 # Add options for runtime selection
 #------------------------------------------------------------------------------#
 
-set(FLECSI_RUNTIME_MODELS legion mpi hpx)
+set(FLECSI_RUNTIME_MODELS legion mpi hpx charm)
 
 if(NOT FLECSI_RUNTIME_MODEL)
   list(GET FLECSI_RUNTIME_MODELS 0 FLECSI_RUNTIME_MODEL)
@@ -117,9 +117,13 @@ elseif(FLECSI_RUNTIME_MODEL STREQUAL "legion")
 elseif(FLECSI_RUNTIME_MODEL STREQUAL "hpx")
   set(ENABLE_MPI ON CACHE BOOL "Enable MPI" FORCE)
   set(ENABLE_HPX ON CACHE BOOL "Enable HPX" FORCE)
+elseif(FLECSI_RUNTIME_MODEL STREQUAL "charm")
+  set(ENABLE_MPI ON CACHE BOOL "Enable MPI" FORCE)
+  set(ENABLE_LEGION ON CACHE BOOL "Enable Legion" FORCE)
+  set(ENABLE_CHARM ON CACHE BOOL "Enable Legion" FORCE)
 endif()
 
-mark_as_advanced(ENABLE_MPI ENABLE_LEGION ENABLE_HPX)
+mark_as_advanced(ENABLE_MPI ENABLE_LEGION ENABLE_HPX ENABLE_CHARM)
 
 #------------------------------------------------------------------------------#
 # Legion
@@ -143,6 +147,14 @@ endif()
 
 if(ENABLE_HPX)
   include(hpx)
+endif()
+
+#------------------------------------------------------------------------------#
+# Charm
+#------------------------------------------------------------------------------#
+
+if(ENABLE_CHARM)
+  include(charm)
 endif()
 
 #------------------------------------------------------------------------------#
@@ -260,6 +272,9 @@ elseif(FLECSI_RUNTIME_MODEL STREQUAL "mpi")
 
   set(FLECSI_RUNTIME_LIBRARIES ${DL_LIBS} ${MPI_LIBRARIES})
 
+#
+# HPX interface
+#
 elseif(FLECSI_RUNTIME_MODEL STREQUAL "hpx")
 
   if(NOT HPX_FOUND)
@@ -273,6 +288,32 @@ elseif(FLECSI_RUNTIME_MODEL STREQUAL "hpx")
    set(FLECSI_RUNTIME_LIBRARIES ${DL_LIBS} ${MPI_LIBRARIES})
 
   set(_runtime_path ${PROJECT_SOURCE_DIR}/flecsi/execution/hpx)
+
+#
+# Charm interface
+#
+elseif(FLECSI_RUNTIME_MODEL STREQUAL "charm")
+
+  if(NOT MPI_${MPI_LANGUAGE}_FOUND)
+    message (FATAL_ERROR "MPI is required for the charm runtime model")
+  endif()
+
+  if(NOT Legion_FOUND)
+    message (FATAL_ERROR "Legion is required for the charm runtime model")
+  endif()
+
+  set(_runtime_path ${PROJECT_SOURCE_DIR}/flecsi/execution/charm)
+
+  set(FLECSI_RUNTIME_LIBRARIES ${DL_LIBS} ${Legion_LIBRARIES}
+    ${MPI_LIBRARIES})
+
+  list(APPEND FLECSI_INCLUDE_DEPENDENCIES ${Legion_INCLUDE_DIRS})
+
+  #
+  # Compacted storage interface
+  #
+  option(ENABLE_MAPPER_COMPACTION "Enable Legion Mapper compaction" ON)
+  mark_as_advanced(ENABLE_MAPPER_COMPACTION)
 
 #
 # Default

@@ -34,4 +34,8 @@
 
 #include <flecsi/data/hpx/policy.hh>
 
+#elif FLECSI_RUNTIME_MODEL == FLECSI_RUNTIME_MODEL_charm
+
+#include <flecsi/data/charm/policy.hh>
+
 #endif // FLECSI_RUNTIME_MODEL
