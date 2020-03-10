@@ -1,0 +1,5 @@
+mainmodule context {
+  group ContextGroup {
+    entry ContextGroup();
+  }
+}

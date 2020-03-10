@@ -39,6 +39,12 @@
 
 #include <mpi.h>
 
+#if !defined(FLECSI_ENABLE_CHARM)
+#error FLECSI_ENABLE_CHARM not defined! This file depends on Charm!
+#endif
+
+#include <charm++.h>
+
 #include <map>
 #include <string_view>
 #include <unordered_map>

@@ -59,6 +59,7 @@ elseif(FLECSI_RUNTIME_MODEL STREQUAL "charm")
   set(runtime_SOURCES
     ${runtime_SOURCES}
     charm/context.cc
+    charm/context.decl.h
   )
 
 endif()
