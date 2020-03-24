@@ -24,7 +24,6 @@
 #include <flecsi/runtime/charm/context.hh>
 #include <flecsi/runtime/charm/mapper.hh>
 #include <flecsi/runtime/charm/tasks.hh>
-#include <flecsi/runtime/program_options.hh>
 #include <flecsi/runtime/types.hh>
 
 namespace flecsi::runtime {
@@ -57,8 +56,8 @@ top_level_task(const Legion::Task *,
     Invoke the FleCSI runtime top-level action.
    */
 
-  detail::data_guard(),
-    context_.exit_status() = context_.top_level_action()(args.argc, args.argv);
+  detail::data_guard(), context_.exit_status() =
+                          (*context_.top_level_action_)(args.argc, args.argv);
 
   /*
     Finish up Legion runtime and fall back out to MPI.
@@ -136,8 +135,14 @@ context_t::finalize() {
 //----------------------------------------------------------------------------//
 
 int
-context_t::start() {
+context_t::start(const std::function<int(int, char **)> & action) {
   using namespace Legion;
+
+  /*
+    Store the top-level action for invocation from the top-level task.
+   */
+
+  top_level_action_ = &action;
 
   /*
     Setup Legion top-level task.
@@ -149,7 +154,6 @@ context_t::start() {
     Legion::TaskVariantRegistrar registrar(
       FLECSI_TOP_LEVEL_TASK_ID, "runtime_driver");
     registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
-    //    registrar.set_inner();
     registrar.set_replicable();
     Runtime::preregister_task_variant<top_level_task>(
       registrar, "runtime_driver");

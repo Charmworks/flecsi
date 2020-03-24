@@ -16,12 +16,7 @@
 /*! @file */
 
 #include <flecsi/data/charm/types.hh>
-#include <flecsi/data/reference.hh>
-#include <flecsi/data/storage_classes.hh>
 #include <flecsi/runtime/backend.hh>
-#include <flecsi/runtime/types.hh>
-#include <flecsi/topology/core.hh>
-#include <flecsi/topology/unstructured/types.hh>
 #include <flecsi/utils/flog.hh>
 
 #if !defined(FLECSI_ENABLE_LEGION)
@@ -49,52 +44,6 @@ struct topology_id {
 
   std::size_t id;
 };
-
-/*----------------------------------------------------------------------------*
-  Index Topology.
- *----------------------------------------------------------------------------*/
-
-inline topology_data<topology::index>::topology_data(
-  const type::coloring & coloring)
-  : topology_base(Legion::Domain::from_rect<1>(
-      LegionRuntime::Arrays::Rect<1>(0, coloring.size() - 1))),
-    colors(coloring.size()) {
-
-  auto legion_runtime = Legion::Runtime::get_runtime();
-  auto legion_context = Legion::Runtime::get_context();
-  auto & flecsi_context = runtime::context_t::instance();
-
-  auto & field_info_store = flecsi_context.get_field_info_store(
-    topology::id<topology::index>(), storage_label_t::dense);
-
-  Legion::FieldAllocator allocator =
-    legion_runtime->create_field_allocator(legion_context, field_space);
-
-  for(auto const & fi : field_info_store) {
-    allocator.allocate_field(fi->type_size, fi->fid);
-  } // for
-
-  allocate();
-
-  Legion::IndexPartition index_partition =
-    legion_runtime->create_equal_partition(
-      legion_context, index_space, index_space);
-
-  color_partition = legion_runtime->get_logical_partition(
-    legion_context, logical_region, index_partition);
-}
-
-/*----------------------------------------------------------------------------*
-  Unstructured Mesh Topology.
- *----------------------------------------------------------------------------*/
-
-inline topology_data<topology::unstructured_base>::topology_data(
-  const type::coloring & coloring) {
-  (void)coloring;
-}
-
-// NOTE THAT THE HANDLE TYPE FOR THIS TYPE WILL NEED TO CAPTURE THE
-// UNDERLYING TOPOLOGY TYPE, i.e., topology::mesh_t<MESH_POLICY>
 
 } // namespace data
 } // namespace flecsi

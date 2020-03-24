@@ -101,7 +101,7 @@ struct context_t : context {
     Documentation for this interface is in the top-level context type.
    */
 
-  int start();
+  int start(const std::function<int(int, char **)> &);
 
   /*
     Documentation for this interface is in the top-level context type.
@@ -363,6 +363,7 @@ private:
 
   // The first element is the head of the free list.
   std::vector<void *> enumerated = {nullptr};
+  const std::function<int(int, char **)> * top_level_action_ = nullptr;
 
   /*--------------------------------------------------------------------------*
     Interoperability data members.
