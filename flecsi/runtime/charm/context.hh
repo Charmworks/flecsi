@@ -49,6 +49,8 @@
 #include <string_view>
 #include <unordered_map>
 
+#include "context.decl.h"
+
 namespace flecsi::runtime {
 
 const size_t FLECSI_TOP_LEVEL_TASK_ID = 0;
@@ -63,6 +65,14 @@ using task = R(const Legion::Task *,
   const std::vector<Legion::PhysicalRegion> &,
   Legion::Context,
   Legion::Runtime *);
+
+class ContextGroup : public CBase_ContextGroup {
+public:
+  ContextGroup() {
+    CkPrintf("Group created on %i\n", CkMyPe());
+  }
+};
+
 }
 
 struct context_t : context {

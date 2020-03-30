@@ -26,6 +26,10 @@
 #include <flecsi/runtime/charm/tasks.hh>
 #include <flecsi/runtime/types.hh>
 
+#include <mpi-interoperate.h>
+
+#include "context.def.h"
+
 namespace flecsi::runtime {
 
 using namespace boost::program_options;
@@ -74,37 +78,12 @@ int
 context_t::initialize(int argc, char ** argv, bool dependent) {
 
   if(dependent) {
-    int version, subversion;
-    MPI_Get_version(&version, &subversion);
-
-#if defined(GASNET_CONDUIT_MPI)
-    if(version == 3 && subversion > 0) {
-      int provided;
-      MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
-
-      if(provided < MPI_THREAD_MULTIPLE) {
-        std::cerr << "Your implementation of MPI does not support "
-                     "MPI_THREAD_MULTIPLE which is required for use of the "
-                     "GASNet MPI conduit with the Legion-MPI Interop!"
-                  << std::endl;
-        std::abort();
-      } // if
-    }
-    else {
-      // Initialize the MPI runtime
-      MPI_Init(&argc, &argv);
-    } // if
-#else
-    MPI_Init(&argc, &argv);
-#endif
+    CharmInit(argc, argv);
+    charm::CProxy_ContextGroup::ckNew();
   } // if
 
-  int rank, size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-  context::process_ = rank;
-  context::processes_ = size;
+  context::process_ = CkMyPe();
+  context::processes_ = CkNumPes();
 
   auto status = context::initialize_generic(argc, argv, dependent);
 
