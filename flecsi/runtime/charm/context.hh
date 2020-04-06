@@ -71,6 +71,11 @@ public:
   ContextGroup() {
     CkPrintf("Group created on %i\n", CkMyPe());
   }
+
+  void testEntry() {
+    CkPrintf("Hello from element %i\n", thisIndex);
+    contribute(CkCallback(CkCallback::ckExit));
+  }
 };
 
 }

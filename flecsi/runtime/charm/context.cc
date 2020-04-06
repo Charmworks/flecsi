@@ -79,7 +79,9 @@ context_t::initialize(int argc, char ** argv, bool dependent) {
 
   if(dependent) {
     CharmInit(argc, argv);
-    charm::CProxy_ContextGroup::ckNew();
+    charm::CProxy_ContextGroup cgProxy = charm::CProxy_ContextGroup::ckNew();
+    cgProxy.testEntry();
+    StartCharmScheduler();
   } // if
 
   context::process_ = CkMyPe();
@@ -88,7 +90,7 @@ context_t::initialize(int argc, char ** argv, bool dependent) {
   auto status = context::initialize_generic(argc, argv, dependent);
 
   if(status != success && dependent) {
-    MPI_Finalize();
+    CharmLibExit();
   } // if
 
   return status;
@@ -102,11 +104,9 @@ void
 context_t::finalize() {
   context::finalize_generic();
 
-#ifndef GASNET_CONDUIT_MPI
   if(context::initialize_dependent_) {
-    MPI_Finalize();
+    CharmLibExit();
   } // if
-#endif
 } // finalize
 
 //----------------------------------------------------------------------------//

@@ -5,6 +5,7 @@ namespace charm {
 
   group ContextGroup {
     entry ContextGroup();
+    entry void testEntry();
   }
 
 }
