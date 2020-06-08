@@ -256,7 +256,7 @@ struct program_option {
   }
 
   bool has_value() const {
-    return value_.has_value();
+    return value_.is_initialized();
   }
 
 private:

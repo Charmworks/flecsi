@@ -1,0 +1,14 @@
+mainmodule context {
+namespace flecsi {
+namespace runtime {
+namespace charm {
+
+  group ContextGroup {
+    entry ContextGroup();
+    entry void testEntry();
+  }
+
+}
+}
+}
+}
