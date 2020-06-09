@@ -19,10 +19,10 @@
 #error Do not include this file directly!
 #endif
 
-#include "../reduction.hh"
-#include "flecsi/runtime/backend.hh"
-#include "flecsi/utils/demangle.hh"
-#include <flecsi/utils/flog.hh>
+//#include "../reduction.hh"
+#include "flecsi/run/backend.hh"
+#include "flecsi/util/demangle.hh"
+#include <flecsi/flog.hh>
 
 #include <legion.h>
 

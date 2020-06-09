@@ -1,6 +1,6 @@
 mainmodule context {
 namespace flecsi {
-namespace runtime {
+namespace run {
 namespace charm {
 
   group ContextGroup {

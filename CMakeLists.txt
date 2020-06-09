@@ -238,7 +238,7 @@ if(FLECSI_RUNTIME_MODEL STREQUAL "legion")
     message (FATAL_ERROR "Legion is required for the legion runtime model")
   endif()
 
-  set(_runtime_path ${PROJECT_SOURCE_DIR}/flecsi/execution/legion)
+  set(_runtime_path ${PROJECT_SOURCE_DIR}/flecsi/exec/legion)
 
   set(FLECSI_RUNTIME_LIBRARIES ${DL_LIBS} ${Legion_LIBRARIES}
     ${MPI_LIBRARIES})
@@ -260,7 +260,7 @@ elseif(FLECSI_RUNTIME_MODEL STREQUAL "mpi")
     message (FATAL_ERROR "MPI is required for the mpi runtime model")
   endif()
 
-  set(_runtime_path ${PROJECT_SOURCE_DIR}/flecsi/execution/mpi)
+  set(_runtime_path ${PROJECT_SOURCE_DIR}/flecsi/exec/mpi)
 
   set(FLECSI_RUNTIME_LIBRARIES ${DL_LIBS} ${MPI_LIBRARIES})
 
@@ -279,7 +279,7 @@ elseif(FLECSI_RUNTIME_MODEL STREQUAL "hpx")
 
    set(FLECSI_RUNTIME_LIBRARIES ${DL_LIBS} ${MPI_LIBRARIES})
 
-  set(_runtime_path ${PROJECT_SOURCE_DIR}/flecsi/execution/hpx)
+  set(_runtime_path ${PROJECT_SOURCE_DIR}/flecsi/exec/hpx)
 
 #
 # Charm interface
@@ -294,7 +294,7 @@ elseif(FLECSI_RUNTIME_MODEL STREQUAL "charm")
     message (FATAL_ERROR "Legion is required for the charm runtime model")
   endif()
 
-  set(_runtime_path ${PROJECT_SOURCE_DIR}/flecsi/execution/charm)
+  set(_runtime_path ${PROJECT_SOURCE_DIR}/flecsi/exec/charm)
 
   set(FLECSI_RUNTIME_LIBRARIES ${DL_LIBS} ${Legion_LIBRARIES}
     ${MPI_LIBRARIES})

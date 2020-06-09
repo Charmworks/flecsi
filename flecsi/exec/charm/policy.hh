@@ -22,16 +22,16 @@
 #endif
 
 #include "../launch.hh"
-#include "flecsi/runtime/backend.hh"
-#include "flecsi/runtime/charm/tasks.hh"
-#include "flecsi/utils/demangle.hh"
-#include "flecsi/utils/function_traits.hh"
+#include "flecsi/run/backend.hh"
+#include "flecsi/run/charm/tasks.hh"
+#include "flecsi/util/demangle.hh"
+#include "flecsi/util/function_traits.hh"
 #include "task_prologue.hh"
 #include "task_wrapper.hh"
-#include <flecsi/execution/charm/future.hh>
-#include <flecsi/execution/charm/reduction_wrapper.hh>
-#include <flecsi/utils/flog.hh>
-#include <flecsi/utils/flog/utils.hh>
+#include <flecsi/exec/charm/future.hh>
+#include <flecsi/exec/charm/reduction_wrapper.hh>
+#include <flecsi/flog.hh>
+#include <flecsi/log/utils.hh>
 
 #include <functional>
 #include <memory>

@@ -23,10 +23,10 @@
 
 #include "flecsi/data/accessor.hh"
 #include "flecsi/data/privilege.hh"
-#include "flecsi/runtime/backend.hh"
-#include "flecsi/topology/core.hh"
-#include <flecsi/utils/demangle.hh>
-#include <flecsi/utils/tuple_walker.hh>
+#include "flecsi/run/backend.hh"
+#include "flecsi/topo/core.hh"
+#include <flecsi/util/demangle.hh>
+#include <flecsi/util/tuple_walker.hh>
 
 #if !defined(FLECSI_ENABLE_LEGION)
 #error FLECSI_ENABLE_LEGION not defined! This file depends on Legion!

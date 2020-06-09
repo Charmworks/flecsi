@@ -22,7 +22,7 @@
 //#include "flecsi/execution/launch.hh"
 #include "../backend.hh"
 
-namespace flecsi::runtime {
+namespace flecsi::run {
 
 /*----------------------------------------------------------------------------*
   Other legion tasks.
@@ -63,7 +63,7 @@ wait_on_mpi_task(const Legion::Task *,
  @ingroup legion-runtime
 */
 
-#include <flecsi/utils/flog/state.hh>
+#include <flecsi/log/state.hh>
 
 inline size_t
 flog_reduction_task(const Legion::Task *,
@@ -86,4 +86,4 @@ flog_mpi_task(const Legion::Task *,
 
 #endif // FLECSI_ENABLE_FLOG
 
-} // namespace flecsi::runtime
+} // namespace flecsi::run

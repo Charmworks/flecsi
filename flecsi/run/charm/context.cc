@@ -19,18 +19,18 @@
 #endif
 
 #include <flecsi/data.hh>
-#include <flecsi/execution/launch.hh>
-#include <flecsi/execution/charm/task_wrapper.hh>
-#include <flecsi/runtime/charm/context.hh>
-#include <flecsi/runtime/charm/mapper.hh>
-#include <flecsi/runtime/charm/tasks.hh>
-#include <flecsi/runtime/types.hh>
+#include <flecsi/exec/launch.hh>
+#include <flecsi/exec/charm/task_wrapper.hh>
+#include <flecsi/run/charm/context.hh>
+#include <flecsi/run/charm/mapper.hh>
+#include <flecsi/run/charm/tasks.hh>
+#include <flecsi/run/types.hh>
 
 #include <mpi-interoperate.h>
 
 #include "context.def.h"
 
-namespace flecsi::runtime {
+namespace flecsi::run {
 
 using namespace boost::program_options;
 using execution::charm::task_id;
@@ -296,4 +296,4 @@ context_t::connect_with_mpi(Legion::Context &, Legion::Runtime *) {
   context_t::instance().set_all_processes(launch_bounds);
 } // context_t::connect_with_mpi
 
-} // namespace flecsi::runtime
+} // namespace flecsi::run

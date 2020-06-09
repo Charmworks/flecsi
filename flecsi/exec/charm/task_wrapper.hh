@@ -23,12 +23,12 @@
 
 #include "../task_attributes.hh"
 #include "bind_accessors.hh"
-#include "flecsi/runtime/backend.hh"
-#include "flecsi/utils/function_traits.hh"
-#include "flecsi/utils/serialize.hh"
+#include "flecsi/run/backend.hh"
+#include "flecsi/util/function_traits.hh"
+#include "flecsi/util/serialize.hh"
 #include "unbind_accessors.hh"
-#include <flecsi/utils/common.hh>
-#include <flecsi/utils/flog.hh>
+#include <flecsi/util/common.hh>
+#include <flecsi/flog.hh>
 
 #if !defined(FLECSI_ENABLE_LEGION)
 #error FLECSI_ENABLE_LEGION not defined! This file depends on Legion!

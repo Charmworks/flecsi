@@ -23,14 +23,14 @@
 
 #include "flecsi/data/accessor.hh"
 #include "flecsi/data/privilege.hh"
-#include "flecsi/data/topology_accessor.hh"
-#include "flecsi/runtime/backend.hh"
-#include <flecsi/topology/ntree/interface.hh>
-#include <flecsi/topology/set/interface.hh>
-#include <flecsi/topology/structured/interface.hh>
+//#include "flecsi/data/topo_accessor.hh"
+#include "flecsi/run/backend.hh"
+#include <flecsi/topo/ntree/interface.hh>
+#include <flecsi/topo/set/interface.hh>
+#include <flecsi/topo/structured/interface.hh>
 //#include <flecsi/topology/unstructured/interface.hh>
-#include <flecsi/utils/demangle.hh>
-#include <flecsi/utils/tuple_walker.hh>
+#include <flecsi/util/demangle.hh>
+#include <flecsi/util/tuple_walker.hh>
 
 #if !defined(FLECSI_ENABLE_LEGION)
 #error FLECSI_ENABLE_LEGION not defined! This file depends on Legion!

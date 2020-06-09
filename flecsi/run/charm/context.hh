@@ -24,8 +24,8 @@
 #include "../context.hh"
 //#include "flecsi/execution/launch.hh"
 //#include "flecsi/execution/processor.hh"
-#include <flecsi/runtime/types.hh>
-#include <flecsi/utils/common.hh>
+#include <flecsi/run/types.hh>
+#include <flecsi/util/common.hh>
 
 #if !defined(FLECSI_ENABLE_LEGION)
 #error FLECSI_ENABLE_LEGION not defined! This file depends on Legion!
@@ -51,7 +51,7 @@
 
 #include "context.decl.h"
 
-namespace flecsi::runtime {
+namespace flecsi::run {
 
 const size_t FLECSI_TOP_LEVEL_TASK_ID = 0;
 const size_t FLECSI_MAPPER_FORCE_RANK_MATCH = 0x00001000;
@@ -395,4 +395,4 @@ private:
   std::vector<registration_function_t> task_registry_;
 };
 
-} // namespace flecsi::runtime
+} // namespace flecsi::run

@@ -16,8 +16,8 @@
 /*! @file */
 
 #include <flecsi/data/charm/types.hh>
-#include <flecsi/runtime/backend.hh>
-#include <flecsi/utils/flog.hh>
+#include <flecsi/run/backend.hh>
+#include <flecsi/flog.hh>
 
 #if !defined(FLECSI_ENABLE_LEGION)
 #error FLECSI_ENABLE_LEGION not defined! This file depends on Legion!

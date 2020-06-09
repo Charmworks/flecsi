@@ -23,7 +23,7 @@
 #error FLECSI_ENABLE_LEGION not defined! This file depends on Legion!
 #endif
 
-#include <flecsi/runtime/backend.hh>
+#include <flecsi/run/backend.hh>
 
 #include <legion.h>
 

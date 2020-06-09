@@ -34,7 +34,7 @@
 
 flog_register_tag(legion_mapper);
 
-namespace flecsi::runtime {
+namespace flecsi::run {
 
 /*
  The mpi_mapper_t - is a custom mapper that handles mpi-legion
@@ -312,4 +312,4 @@ mapper_registration(Legion::Machine machine,
   }
 } // mapper registration
 
-} // namespace flecsi::runtime
+} // namespace flecsi::run

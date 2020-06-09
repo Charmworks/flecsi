@@ -48,15 +48,15 @@ elseif(FLECSI_RUNTIME_MODEL STREQUAL "mpi")
 
 elseif(FLECSI_RUNTIME_MODEL STREQUAL "charm")
 
-  set(runtime_HEADERS
-    ${runtime_HEADERS}
+  set(run_HEADERS
+    ${run_HEADERS}
     charm/context.hh
     charm/mapper.hh
     charm/tasks.hh
   )
 
-  set(runtime_SOURCES
-    ${runtime_SOURCES}
+  set(run_SOURCES
+    ${run_SOURCES}
     charm/context.cc
     charm/context.decl.h
   )
