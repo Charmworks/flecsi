@@ -5,7 +5,7 @@ namespace charm {
 
   group ContextGroup {
     entry ContextGroup();
-    entry void testEntry();
+    entry void top_level_task();
   }
 
 }
