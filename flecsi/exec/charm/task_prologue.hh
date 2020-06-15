@@ -23,14 +23,16 @@
 
 #include "flecsi/data/accessor.hh"
 #include "flecsi/data/privilege.hh"
-//#include "flecsi/data/topo_accessor.hh"
+#include "flecsi/data/topology_accessor.hh"
+#include "flecsi/exec/charm/future.hh"
 #include "flecsi/run/backend.hh"
-#include <flecsi/topo/ntree/interface.hh>
-#include <flecsi/topo/set/interface.hh>
-#include <flecsi/topo/structured/interface.hh>
-//#include <flecsi/topology/unstructured/interface.hh>
-#include <flecsi/util/demangle.hh>
-#include <flecsi/util/tuple_walker.hh>
+#include "flecsi/topo/global.hh"
+#include "flecsi/topo/ntree/interface.hh"
+#include "flecsi/topo/set/interface.hh"
+#include "flecsi/topo/structured/interface.hh"
+//#include "flecsi/topo/unstructured/interface.hh"
+#include "flecsi/util/demangle.hh"
+#include "flecsi/util/tuple_walker.hh"
 
 #if !defined(FLECSI_ENABLE_LEGION)
 #error FLECSI_ENABLE_LEGION not defined! This file depends on Legion!
@@ -38,11 +40,11 @@
 
 #include <legion.h>
 
-flog_register_tag(task_prologue);
-
 namespace flecsi {
-namespace execution {
-namespace charm {
+
+inline log::devel_tag task_prologue_tag("task_prologue");
+
+namespace exec::charm {
 
 /*!
   The task_prologue_t type can be called to walk task args before the
@@ -64,9 +66,17 @@ struct task_prologue_t {
 
   task_prologue_t(const size_t & domain) : domain_(domain) {}
 
-  std::vector<Legion::RegionRequirement> const & region_requirements() {
+  std::vector<Legion::RegionRequirement> const & region_requirements() const {
     return region_reqs_;
   } // region_requirements
+
+  std::vector<Legion::Future> && futures() && {
+    return std::move(futures_);
+  } // futures
+
+  std::vector<Legion::FutureMap> const & future_maps() const {
+    return future_maps_;
+  } // future_maps
 
   /*!
     Convert the template privileges to proper Legion privileges.
@@ -97,26 +107,35 @@ struct task_prologue_t {
   }
 
   /*^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*
-    The following methods are specializations on storage class and client
+    The following methods are specializations on layout and client
     type, potentially for every permutation thereof.
    *^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
+
+  template<class T,
+    std::size_t Priv,
+    class Topo,
+    topo::index_space_t<Topo> Space>
+  void visit(data::accessor<data::singular, T, Priv> * null_p,
+    const data::field_reference<T, data::singular, Topo, Space> & ref) {
+    visit(get_null_base(null_p), ref.template cast<data::dense>());
+  }
 
   /*--------------------------------------------------------------------------*
     Global Topology
    *--------------------------------------------------------------------------*/
 
   template<typename DATA_TYPE, size_t PRIVILEGES>
-  void visit(data::accessor<data::dense,
-               topology::global,
-               DATA_TYPE,
-               PRIVILEGES> * /* parameter */,
-    const data::field_reference<DATA_TYPE, topology::global> & ref) {
+  void visit(
+    data::accessor<data::dense, DATA_TYPE, PRIVILEGES> * /* parameter */,
+    const data::
+      field_reference<DATA_TYPE, data::dense, topo::global, topo::elements> &
+        ref) {
     Legion::LogicalRegion region = ref.topology().get().logical_region;
 
-    static_assert(privilege_count<PRIVILEGES>() == 1,
+    static_assert(privilege_count(PRIVILEGES) == 1,
       "global topology accessor type only takes one privilege");
 
-    constexpr auto priv = get_privilege<0, PRIVILEGES>();
+    constexpr auto priv = get_privilege(0, PRIVILEGES);
 
     if(priv > partition_privilege_t::ro)
       flog_assert(domain_ == 1,
@@ -131,89 +150,82 @@ struct task_prologue_t {
     region_reqs_.push_back(rr);
   } // visit
 
-  /*--------------------------------------------------------------------------*
-    Index Topology
-   *--------------------------------------------------------------------------*/
-
-  template<typename DATA_TYPE, size_t PRIVILEGES>
-  void visit(data::accessor<data::dense,
-               topology::index,
-               DATA_TYPE,
-               PRIVILEGES> * /* parameter */,
-    const data::field_reference<DATA_TYPE, topology::index> & ref) {
-    auto & instance_data = ref.topology().get();
+  template<typename DATA_TYPE,
+    size_t PRIVILEGES,
+    class Topo,
+    topo::index_space_t<Topo> Space,
+    class = std::enable_if_t<topo::privilege_count<Topo, Space> == 1>>
+  void visit(
+    data::accessor<data::dense, DATA_TYPE, PRIVILEGES> * /* parameter */,
+    const data::field_reference<DATA_TYPE, data::dense, Topo, Space> & ref) {
+    auto & instance_data = ref.topology().get().template get_partition<Space>();
 
     flog_assert(instance_data.colors() == domain_,
-      "attempting to pass index topology reference with size "
-        << instance_data.colors()<< " into task with launch domain of size "
-        << domain_);
+      "attempting to pass field with "
+        << instance_data.colors()
+        << " partitions into task with launch domain of size " << domain_);
 
-    static_assert(privilege_count<PRIVILEGES>() == 1,
-      "index topology accessor type only takes one privilege");
+    static_assert(privilege_count(PRIVILEGES) == 1,
+      "accessors for this topology type take only one privilege");
 
     Legion::RegionRequirement rr(instance_data.logical_partition,
       0,
-      privilege_mode(get_privilege<0, PRIVILEGES>()),
+      privilege_mode(get_privilege(0, PRIVILEGES)),
       EXCLUSIVE,
-      instance_data.logical_region);
+      Legion::Runtime::get_runtime()->get_parent_logical_region(
+        instance_data.logical_partition));
 
     rr.add_field(ref.fid());
     region_reqs_.push_back(rr);
   } // visit
 
-  /*--------------------------------------------------------------------------*
-    NTree Topology
-   *--------------------------------------------------------------------------*/
-
-  template<typename POLICY_TYPE, size_t PRIVILEGES>
-  using ntree_accessor =
-    data::topology_accessor<topology::ntree<POLICY_TYPE>, PRIVILEGES>;
-
-  template<class T, typename POLICY_TYPE, size_t PRIVILEGES>
-  void visit(ntree_accessor<POLICY_TYPE, PRIVILEGES> * /* parameter */,
-    const data::field_reference<T, topology::ntree<POLICY_TYPE>> &) {} // visit
+  template<class Topo, std::size_t Priv>
+  void visit(data::topology_accessor<Topo, Priv> * /* parameter */,
+    const data::topology_slot<Topo> & slot) {
+    Topo::core::fields([&](auto & f) {
+      visit(static_cast<data::field_accessor<decltype(f), Priv> *>(nullptr),
+        f(slot));
+    });
+  }
 
   /*--------------------------------------------------------------------------*
-    Set Topology
+    Futures
    *--------------------------------------------------------------------------*/
+  template<typename DATA_TYPE>
+  void visit(exec::flecsi_future<DATA_TYPE, launch_type_t::single> *,
+    const exec::legion_future<DATA_TYPE, exec::launch_type_t::single> &
+      future) {
+    futures_.push_back(future.legion_future_);
+  }
 
-  template<typename POLICY_TYPE, size_t PRIVILEGES>
-  using set_accessor =
-    data::topology_accessor<topology::set<POLICY_TYPE>, PRIVILEGES>;
-
-  template<class T, typename POLICY_TYPE, size_t PRIVILEGES>
-  void visit(set_accessor<POLICY_TYPE, PRIVILEGES> * /* parameter */,
-    const data::field_reference<T, topology::set<POLICY_TYPE>> &) {} // visit
-
-  /*--------------------------------------------------------------------------*
-    Structured Mesh Topology
-   *--------------------------------------------------------------------------*/
-
-  template<typename POLICY_TYPE, size_t PRIVILEGES>
-  using structured_accessor =
-    data::topology_accessor<topology::structured<POLICY_TYPE>, PRIVILEGES>;
-
-  template<class T, typename POLICY_TYPE, size_t PRIVILEGES>
-  void visit(structured_accessor<POLICY_TYPE, PRIVILEGES> * /* parameter */,
-    const data::field_reference<T, topology::structured<POLICY_TYPE>> &) {
-  } // visit
+  template<typename DATA_TYPE>
+  void visit(exec::flecsi_future<DATA_TYPE, launch_type_t::single> *,
+    const exec::legion_future<DATA_TYPE, exec::launch_type_t::index> & future) {
+    future_maps_.push_back(future.legion_future_);
+  }
 
   /*--------------------------------------------------------------------------*
     Non-FleCSI Data Types
    *--------------------------------------------------------------------------*/
 
-  template<class P, typename DATA_TYPE>
-  static typename std::enable_if_t<
-    !std::is_base_of_v<data::reference_base, DATA_TYPE>>
-  visit(P *, DATA_TYPE &) {
+  template<typename DATA_TYPE>
+  static void visit(DATA_TYPE &) {
+    static_assert(!std::is_base_of_v<data::convert_tag, DATA_TYPE>,
+      "Unknown task argument type");
     {
-      flog_tag_guard(task_prologue);
+      log::devel_guard guard(task_prologue_tag);
       flog_devel(info) << "Skipping argument with type "
-                       << flecsi::utils::type<DATA_TYPE>() << std::endl;
+                       << util::type<DATA_TYPE>() << std::endl;
     }
   } // visit
 
 private:
+  // Argument types for which we don't also need the type of the parameter:
+  template<class P, typename DATA_TYPE>
+  void visit(P *, DATA_TYPE & x) {
+    visit(x);
+  } // visit
+
   template<class... PP, class... AA>
   void walk(std::tuple<PP...> * /* to deduce PP */, const AA &... aa) {
     (visit(static_cast<std::decay_t<PP> *>(nullptr), aa), ...);
@@ -222,9 +234,9 @@ private:
   size_t domain_;
 
   std::vector<Legion::RegionRequirement> region_reqs_;
-
+  std::vector<Legion::Future> futures_;
+  std::vector<Legion::FutureMap> future_maps_;
 }; // task_prologue_t
 
-} // namespace charm
-} // namespace execution
+} // namespace exec::charm
 } // namespace flecsi

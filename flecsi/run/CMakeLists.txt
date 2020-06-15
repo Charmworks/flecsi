@@ -57,8 +57,8 @@ elseif(FLECSI_RUNTIME_MODEL STREQUAL "charm")
 
   set(run_SOURCES
     ${run_SOURCES}
-    charm/context.cc
     charm/context.decl.h
+    charm/context.cc
   )
 
 endif()

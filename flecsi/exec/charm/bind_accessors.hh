@@ -23,10 +23,11 @@
 
 #include "flecsi/data/accessor.hh"
 #include "flecsi/data/privilege.hh"
+#include "flecsi/data/topology_accessor.hh"
+#include "flecsi/exec/charm/future.hh"
 #include "flecsi/run/backend.hh"
-#include "flecsi/topo/core.hh"
-#include <flecsi/util/demangle.hh>
-#include <flecsi/util/tuple_walker.hh>
+#include "flecsi/util/demangle.hh"
+#include "flecsi/util/tuple_walker.hh"
 
 #if !defined(FLECSI_ENABLE_LEGION)
 #error FLECSI_ENABLE_LEGION not defined! This file depends on Legion!
@@ -34,11 +35,11 @@
 
 #include <legion.h>
 
-flog_register_tag(bind_accessors);
-
 namespace flecsi {
-namespace execution {
-namespace charm {
+
+inline log::devel_tag bind_accessors_tag("bind_accessors");
+
+namespace exec::charm {
 
 /*!
   The bind_accessors_t type is called to walk the user task arguments inside of
@@ -47,7 +48,7 @@ namespace charm {
   buffers.
  */
 
-struct bind_accessors_t : public flecsi::utils::tuple_walker<bind_accessors_t> {
+struct bind_accessors_t : public util::tuple_walker<bind_accessors_t> {
 
   /*!
     Construct an bind_accessors_t instance.
@@ -59,19 +60,12 @@ struct bind_accessors_t : public flecsi::utils::tuple_walker<bind_accessors_t> {
   bind_accessors_t(Legion::Runtime * legion_runtime,
     Legion::Context & legion_context,
     std::vector<Legion::PhysicalRegion> const & regions,
-    std::vector<Legion::Future> const &)
+    std::vector<Legion::Future> const & futures)
     : legion_runtime_(legion_runtime), legion_context_(legion_context),
-      regions_(regions) {}
+      regions_(regions), futures_(futures) {}
 
-  /*^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*
-    The following methods are specializations on storage class and topology
-    type, potentially for every permutation thereof.
-   *^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
-
-  template<class A>
-  void dense(A & accessor) {
-    using DATA_TYPE = typename A::value_type;
-
+  template<typename DATA_TYPE, size_t PRIVILEGES>
+  void visit(data::accessor<data::dense, DATA_TYPE, PRIVILEGES> & accessor) {
     auto & reg = regions_[region++];
 
     //    Legion::FieldAccessor<privilege_mode(get_privilege<0, PRIVILEGES>()),
@@ -80,34 +74,32 @@ struct bind_accessors_t : public flecsi::utils::tuple_walker<bind_accessors_t> {
       Legion::coord_t,
       Realm::AffineAccessor<DATA_TYPE, 1, Legion::coord_t>>
       ac(reg, accessor.identifier(), sizeof(DATA_TYPE));
+    const auto dom = legion_runtime_->get_index_space_domain(
+      legion_context_, reg.get_logical_region().get_index_space());
+    const auto r = dom.get_rect<1>();
 
     bind(accessor,
-      ac.ptr(Legion::Domain::DomainPointIterator(
-        legion_runtime_->get_index_space_domain(
-          legion_context_, reg.get_logical_region().get_index_space()))
-               .p));
+      r.hi[0] - r.lo[0] + 1,
+      ac.ptr(Legion::Domain::DomainPointIterator(dom).p));
+  }
+
+  template<typename DATA_TYPE, size_t PRIVILEGES>
+  void visit(data::accessor<data::singular, DATA_TYPE, PRIVILEGES> & accessor) {
+    visit(accessor.get_base());
+  }
+
+  template<class Topo, std::size_t Priv>
+  void visit(data::topology_accessor<Topo, Priv> & a) {
+    a.bind([&](auto & x) { visit(x); }); // Clang 8.0.1 deems 'this' unused
   }
 
   /*--------------------------------------------------------------------------*
-    Global Topology
+   Futures
    *--------------------------------------------------------------------------*/
-
-  template<typename DATA_TYPE, size_t PRIVILEGES>
-  void visit(
-    data::accessor<data::dense, topology::global, DATA_TYPE, PRIVILEGES> &
-      accessor) {
-    dense(accessor);
-  }
-
-  /*--------------------------------------------------------------------------*
-    Index Topology
-   *--------------------------------------------------------------------------*/
-
-  template<typename DATA_TYPE, size_t PRIVILEGES>
-  void visit(
-    data::accessor<data::dense, topology::index, DATA_TYPE, PRIVILEGES> &
-      accessor) {
-    dense(accessor);
+  template<typename DATA_TYPE>
+  void visit(exec::flecsi_future<DATA_TYPE, launch_type_t::single> & future) {
+    future.legion_future_ = futures_[future_id];
+    future_id++;
   }
 
   /*--------------------------------------------------------------------------*
@@ -119,9 +111,9 @@ struct bind_accessors_t : public flecsi::utils::tuple_walker<bind_accessors_t> {
     !std::is_base_of_v<data::reference_base, DATA_TYPE>>
   visit(DATA_TYPE &) {
     {
-      flog_tag_guard(bind_accessors);
+      log::devel_guard guard(bind_accessors_tag);
       flog_devel(info) << "Skipping argument with type "
-                       << flecsi::utils::type<DATA_TYPE>() << std::endl;
+                       << util::type<DATA_TYPE>() << std::endl;
     }
   } // visit
 
@@ -130,13 +122,10 @@ private:
   Legion::Context & legion_context_;
   size_t region = 0;
   const std::vector<Legion::PhysicalRegion> & regions_;
-#if 0 // these will be used to bind flecsi_future objects
-  size_t future = 0;
+  size_t future_id = 0;
   const std::vector<Legion::Future> & futures_;
-#endif
 
 }; // struct bind_accessors_t
 
-} // namespace charm
-} // namespace execution
+} // namespace exec::charm
 } // namespace flecsi

@@ -116,7 +116,7 @@ struct context_t : context {
     Documentation for this interface is in the top-level context type.
    */
 
-  int start(const std::function<int(int, char **)> &);
+  int start(const std::function<int()> &);
 
   /*
     Documentation for this interface is in the top-level context type.
@@ -229,7 +229,7 @@ struct context_t : context {
 
   void set_mpi_task(std::function<void()> mpi_task) {
     {
-      flog_tag_guard(context);
+      log::devel_guard guard(context_tag);
       flog_devel(info) << "In set_mpi_task" << std::endl;
     }
 
@@ -310,7 +310,7 @@ private:
 
   void handoff_to_legion() {
     {
-      flog_tag_guard(context);
+      log::devel_guard guard(context_tag);
       flog_devel(info) << "In handoff_to_legion" << std::endl;
     }
     MPI_Barrier(MPI_COMM_WORLD);
@@ -323,7 +323,7 @@ private:
 
   void wait_on_legion() {
     {
-      flog_tag_guard(context);
+      log::devel_guard guard(context_tag);
       flog_devel(info) << "In wait_on_legion" << std::endl;
     }
 
@@ -331,31 +331,22 @@ private:
     MPI_Barrier(MPI_COMM_WORLD);
   } // wait_on_legion
 
+  // When GCC fixes bug #83258, these can be lambdas in the public functions:
   /*!
     Handoff to MPI from Legion.
    */
 
-  void handoff_to_mpi() {
-    {
-      flog_tag_guard(context);
-      flog_devel(info) << "In handoff_to_mpi" << std::endl;
-    }
-
-    handshake_.legion_handoff_to_mpi();
-  } // handoff_to_mpi
+  static void mpi_handoff() {
+    instance().handshake_.legion_handoff_to_mpi();
+  }
 
   /*!
     Wait for MPI runtime to complete task execution.
    */
 
-  void wait_on_mpi() {
-    {
-      flog_tag_guard(context);
-      flog_devel(info) << "In wait_on_mpi" << std::endl;
-    }
-
-    handshake_.legion_wait_on_mpi();
-  } // wait_on_legion
+  static void mpi_wait() {
+    instance().handshake_.legion_wait_on_mpi();
+  }
 
   /*!
     Invoke the current MPI task, if any, and clear it.
@@ -378,7 +369,7 @@ private:
 
   // The first element is the head of the free list.
   std::vector<void *> enumerated = {nullptr};
-  const std::function<int(int, char **)> * top_level_action_ = nullptr;
+  const std::function<int()> * top_level_action_ = nullptr;
 
   /*--------------------------------------------------------------------------*
     Interoperability data members.
