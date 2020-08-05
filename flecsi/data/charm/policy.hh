@@ -19,21 +19,21 @@
 #error Do not include this file directly!
 #endif
 
-#if !defined(FLECSI_ENABLE_LEGION)
-#error FLECSI_ENABLE_LEGION not defined! This file depends on Legion!
+#if !defined(FLECSI_ENABLE_CHARM)
+#error FLECSI_ENABLE_CHARM not defined! This file depends on Charm!
 #endif
 
 #include "flecsi/run/backend.hh"
 #include "flecsi/topo/core.hh" // single_space
-
-#include <legion.h>
 
 #include <unordered_map>
 
 namespace flecsi {
 namespace data {
 
-namespace leg {
+namespace charm {
+
+#if 0
 inline auto &
 run() {
   return *Legion::Runtime::get_runtime();
@@ -81,9 +81,11 @@ inline unique_index_space
 index1(std::size_t n) {
   return run().create_index_space(ctx(), Legion::Rect<1>(0, n - 1));
 }
+#endif
 
 struct region {
-  region(std::size_t n, const fields & fs)
+  region(std::size_t n, const fields & fs) {}
+#if 0
     : index_space(index1(n)),
       field_space([&fs] { // TIP: IIFE (q.v.) allows statements here
         auto & r = run();
@@ -100,6 +102,7 @@ struct region {
   unique_index_space index_space;
   unique_field_space field_space;
   unique_logical_region logical_region;
+#endif
 };
 
 struct partition {
@@ -109,7 +112,8 @@ struct partition {
     std::size_t n,
     F f,
     disjointness dis = {},
-    completeness cpt = {})
+    completeness cpt = {}) {}
+#if 0
     : color_space(index1(n)),
       index_partition(run().create_partition_by_domain(
         ctx(),
@@ -129,23 +133,28 @@ struct partition {
       logical_partition(run().get_logical_partition(ctx(),
         reg.logical_region,
         index_partition)) {}
+#endif
 
   std::size_t colors() const {
-    return run().get_index_space_domain(color_space).get_volume();
+    //return run().get_index_space_domain(color_space).get_volume();
+    return 1;
   }
 
+#if 0
   unique_index_space color_space;
   unique_index_partition index_partition;
   unique_logical_partition logical_partition;
+#endif
 
   template<topo::single_space>
   const partition & get_partition() const {
     return *this;
   }
 };
-} // namespace leg
+} // namespace charm
 
-using leg::region, leg::partition; // for backend-agnostic interface
+using charm::region, charm::partition; // for backend-agnostic interface
+
 
 } // namespace data
 } // namespace flecsi
