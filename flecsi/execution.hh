@@ -409,10 +409,9 @@ template<auto & TASK,
   typename... ARGS>
 int
 test(ARGS &&... args) {
-  // TODO: This needs to correctly return something
-  reduce<TASK, LAUNCH_DOMAIN, exec::fold::sum<int>, ATTRIBUTES>(
-    std::forward<ARGS>(args)...);
-  return 0;
+  return reduce<TASK, LAUNCH_DOMAIN, exec::fold::sum<int>, ATTRIBUTES>(
+    std::forward<ARGS>(args)...)
+    .get();
 } // test
 
 } // namespace flecsi
